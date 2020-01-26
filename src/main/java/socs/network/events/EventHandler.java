@@ -1,6 +1,6 @@
 package socs.network.events;
 
-public interface EventHandler
+public interface EventHandler<T, R>
 {
-    public void handle();
+    public void handle(T eventArg1, R eventArg2);
 }

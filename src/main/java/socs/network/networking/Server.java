@@ -12,7 +12,7 @@ import java.net.Socket;
 public class Server
 {
     private ClientHandler[] clients;
-    public Event msgReceivedEvent;
+    public Event<Integer, String> msgReceivedEvent;
 
     public Server()
     {
