@@ -1,5 +1,7 @@
 package socs.network.node;
 
+import socs.network.events.EventHandler;
+import socs.network.networking.Server;
 import socs.network.util.Configuration;
 
 import java.io.BufferedReader;
@@ -11,6 +13,7 @@ public class Router {
   protected LinkStateDatabase lsd;
 
   RouterDescription rd = new RouterDescription();
+  Server server = new Server();
 
   //assuming that all routers are with 4 ports
   Link[] ports = new Link[4];

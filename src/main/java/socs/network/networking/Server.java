@@ -2,6 +2,7 @@ package socs.network.networking;
 
 import ch.qos.logback.core.net.server.Client;
 import com.sun.istack.internal.NotNull;
+import socs.network.events.Event;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -10,61 +11,41 @@ import java.net.Socket;
 
 public class Server
 {
-    private int portNum;
-    private boolean isListening;
+    private ClientHandler[] clients;
+    public Event msgReceivedEvent;
 
-    public Server(int portNum)
+    public Server()
     {
-        this.portNum = portNum;
-        isListening = false;
+        clients = new ClientHandler[4];
+        msgReceivedEvent = new Event();
     }
 
-    public void listen()
+    //TODO add client
+    public void attach(int portNum)
     {
-        if(isListening)
-        {
-            return;
-        }
-
-        isListening = true;
-
-        new Thread(new Runnable() {
-            public void run() {
-                try
-                {
-                    ServerSocket server = new ServerSocket(portNum);
-
-                    while(true)
-                    {
-                        //Getting the client
-                        Socket client = server.accept();
-
-                        ClientHandler clientHandler = new ClientHandler(client);
-
-                        //TODO might change this
-                        new Thread(clientHandler).start();
-                    }
-                }
-                catch (Exception e)
-                {
-                    System.err.println("FATAL_ERROR: Server was interrupted! \n" + e.getStackTrace());
-                }
-            }
-        }).start();
 
     }
+
+    //TODO send message
+    public void msgSend(String msg)
+    {
+
+    }
+
 }
 
 
 class ClientHandler implements Runnable
 {
     private Socket client;
+    private int portNum;
     private DataInputStream fromClient = null;
     private DataOutputStream toClient = null;
 
-    public ClientHandler(@NotNull Socket client)
+    public ClientHandler(@NotNull Socket client, int portNum)
     {
         this.client = client;
+        this.portNum = portNum;
 
         try
         {
