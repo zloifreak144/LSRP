@@ -1,7 +1,5 @@
 package socs.network.networking;
 
-import ch.qos.logback.classic.net.SimpleSocketServer;
-import ch.qos.logback.core.net.server.Client;
 import com.sun.istack.internal.NotNull;
 import socs.network.events.Event;
 
@@ -15,6 +13,7 @@ public class Server
     private int portNum;
     private ClientHandler[] clients;
     public Event<Integer, String> msgReceivedEvent;
+    public Event<Integer, String> connectionAcceptedEvent;
 
     public Server(int portNum)
     {
@@ -34,6 +33,7 @@ public class Server
                         {
                             ServerSocket server = new ServerSocket(portNum);
                             Socket client = server.accept();
+                            connectionAcceptedEvent.invoke(client.getPort(), client.getInetAddress().getHostName());
 
                             int index = getAvailableIndex();
 
@@ -72,8 +72,6 @@ public class Server
         return -1;
     }
 
-
-    //TODO add client
     public void attach(String processIP, short processPort)
     {
         try
