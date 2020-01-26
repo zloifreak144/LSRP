@@ -13,14 +13,16 @@ public class Router {
   protected LinkStateDatabase lsd;
 
   RouterDescription rd = new RouterDescription();
-  Server server = new Server();
+  Server server;
 
   //assuming that all routers are with 4 ports
   Link[] ports = new Link[4];
 
   public Router(Configuration config) {
     rd.simulatedIPAddress = config.getString("socs.network.router.ip");
+    rd.processPortNumber = config.getShort("socs.network.router.port");
     lsd = new LinkStateDatabase(rd);
+    server = new Server(rd.processPortNumber);
   }
 
   /**
@@ -52,7 +54,8 @@ public class Router {
    * NOTE: this command should not trigger link database synchronization
    */
   private void processAttach(String processIP, short processPort,
-                             String simulatedIP, short weight) {
+                             String simulatedIP, short weight)
+  {
 
   }
 

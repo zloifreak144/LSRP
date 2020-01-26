@@ -1,5 +1,6 @@
 package socs.network.networking;
 
+import ch.qos.logback.classic.net.SimpleSocketServer;
 import ch.qos.logback.core.net.server.Client;
 import com.sun.istack.internal.NotNull;
 import socs.network.events.Event;
@@ -12,26 +13,44 @@ import java.net.Socket;
 
 public class Server
 {
+    private int portNum;
     private ClientHandler[] clients;
     public Event<Integer, String> msgReceivedEvent;
 
-    public Server()
+    public Server(int portNum)
     {
+        this.portNum = portNum;
         clients = new ClientHandler[4];
         msgReceivedEvent = new Event();
     }
 
-    //TODO add client
-    public void attach(int portNum)
+    private void listen()
     {
-        
+        try
+        {
+            new Thread(new Runnable() {
+                public void run() {
+
+                }
+            });
+        }
+        catch (Exception e)
+        {
+
+        }
     }
 
-    public void send(String msg, int portNum)
+    //TODO add client
+    public void attach(String processIP, short processPort)
+    {
+
+    }
+
+    public void send(String msg)
     {
         for(ClientHandler client : clients)
         {
-            if(client != null && client.getPortNum() == portNum)
+            if(client != null)
             {
                 client.send(msg);
             }
@@ -43,15 +62,14 @@ public class Server
 class ClientHandler implements Runnable
 {
     private Socket client;
-    private int portNum;
+    private int index;
     private DataInputStream fromClient = null;
     private DataOutputStream toClient = null;
     public Event<Integer, String> msgReceived;
 
-    ClientHandler(@NotNull Socket client, int portNum)
+    ClientHandler(@NotNull Socket client)
     {
         this.client = client;
-        this.portNum = portNum;
 
         try
         {
@@ -88,7 +106,7 @@ class ClientHandler implements Runnable
             while(true)
             {
                 String msg = recv();
-                msgReceived.invoke(portNum, msg);
+                msgReceived.invoke(index, msg);
             }
         }
         catch (Exception e)
@@ -97,8 +115,8 @@ class ClientHandler implements Runnable
         }
     }
 
-    public int getPortNum()
+    public int getIndex()
     {
-        return portNum;
+        return index;
     }
 }
