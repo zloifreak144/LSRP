@@ -6,6 +6,7 @@ import socs.network.events.Event;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -23,15 +24,19 @@ public class Server
     //TODO add client
     public void attach(int portNum)
     {
-
+        
     }
 
-    //TODO send message
-    public void msgSend(String msg)
+    public void send(String msg, int portNum)
     {
-
+        for(ClientHandler client : clients)
+        {
+            if(client != null && client.getPortNum() == portNum)
+            {
+                client.send(msg);
+            }
+        }
     }
-
 }
 
 
@@ -41,8 +46,9 @@ class ClientHandler implements Runnable
     private int portNum;
     private DataInputStream fromClient = null;
     private DataOutputStream toClient = null;
+    public Event<Integer, String> msgReceived;
 
-    public ClientHandler(@NotNull Socket client, int portNum)
+    ClientHandler(@NotNull Socket client, int portNum)
     {
         this.client = client;
         this.portNum = portNum;
@@ -58,8 +64,41 @@ class ClientHandler implements Runnable
         }
     }
 
+    private String recv() throws IOException
+    {
+       return fromClient.readUTF();
+    }
+
+    public void send(String msg)
+    {
+        try
+        {
+            toClient.writeUTF(msg);
+        }
+        catch(Exception e)
+        {
+            System.err.println("ERROR! Failed to send the message\n" + e.getStackTrace());
+        }
+    }
+
     public void run()
     {
+        try
+        {
+            while(true)
+            {
+                String msg = recv();
+                msgReceived.invoke(portNum, msg);
+            }
+        }
+        catch (Exception e)
+        {
+            System.err.println("ERROR!: Client interrupted\n" + e.getStackTrace());
+        }
+    }
 
+    public int getPortNum()
+    {
+        return portNum;
     }
 }
