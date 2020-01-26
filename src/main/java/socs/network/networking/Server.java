@@ -8,8 +8,7 @@ import socs.network.events.Event;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
 
 public class Server
 {
@@ -77,6 +76,17 @@ public class Server
     //TODO add client
     public void attach(String processIP, short processPort)
     {
+        try
+        {
+            Socket socket = new Socket();
+            InetAddress inetAddress = InetAddress.getByName("localHost");
+            SocketAddress bindingPoint = new InetSocketAddress(inetAddress, portNum);
+            socket.bind(bindingPoint);
+        }
+        catch (Exception e)
+        {
+            System.err.println("ERROR! Failed to attache to " + processIP + " " + processPort + "\n" + e.getStackTrace());
+        }
 
     }
 
