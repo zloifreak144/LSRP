@@ -22,23 +22,57 @@ public class Server
         this.portNum = portNum;
         clients = new ClientHandler[4];
         msgReceivedEvent = new Event();
+        listen();
     }
 
     private void listen()
     {
-        try
-        {
             new Thread(new Runnable() {
                 public void run() {
+                    try
+                    {
+                        while (true)
+                        {
+                            ServerSocket server = new ServerSocket(portNum);
+                            Socket client = server.accept();
 
-                }
-            });
-        }
-        catch (Exception e)
-        {
+                            int index = getAvailableIndex();
 
-        }
+                            if(index == -1)
+                            {
+                                System.err.println("ERROR! Connections Capacity Reached!");
+                                break;
+                            }
+
+                            ClientHandler clientHandler = new ClientHandler(client, index);
+                            new Thread(clientHandler).start();
+                        }
+                    }
+                    catch(Exception e)
+                    {
+                        System.err.println("FATAL_ERROR! Server thread interrupted\n" + e.getStackTrace());
+                    }
+            }
+        }).start();
     }
+
+    /**
+     *
+     * @return the index of the available entry in clients array, -1 on failure
+     */
+    private int getAvailableIndex()
+    {
+        for(int i = 0; i < clients.length; i++)
+        {
+            if(clients[i] == null)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
 
     //TODO add client
     public void attach(String processIP, short processPort)
@@ -46,15 +80,9 @@ public class Server
 
     }
 
-    public void send(String msg)
+    public void send(String msg, int index)
     {
-        for(ClientHandler client : clients)
-        {
-            if(client != null)
-            {
-                client.send(msg);
-            }
-        }
+        clients[index].send(msg);
     }
 }
 
@@ -67,9 +95,10 @@ class ClientHandler implements Runnable
     private DataOutputStream toClient = null;
     public Event<Integer, String> msgReceived;
 
-    ClientHandler(@NotNull Socket client)
+    ClientHandler(@NotNull Socket client, int index)
     {
         this.client = client;
+        this.index = index;
 
         try
         {
