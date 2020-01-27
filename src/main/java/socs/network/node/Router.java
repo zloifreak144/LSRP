@@ -24,6 +24,14 @@ public class Router {
     lsd = new LinkStateDatabase(rd);
     server = new Server(rd.processPortNumber);
 
+
+    server.msgReceivedEvent.addHandler(new EventHandler<Integer, String>() {
+      public void handle(Integer eventArg1, String eventArg2) {
+        System.out.print("received + " + eventArg2 + " from " + server.clients[eventArg1]);
+
+      }
+    });
+
     server.connectionAcceptedEvent.addHandler(new EventHandler<Integer, String>() {
       public void handle(Integer eventArg1, String eventArg2) {
 
@@ -81,8 +89,12 @@ public class Router {
   /**
    * broadcast Hello to neighbors
    */
-  private void processStart() {
-
+  private void processStart()
+  {
+    for (int i = 0;i < ports.length;i++)
+    {
+     // server.send("HELLO",i);
+    }
   }
 
   /**
