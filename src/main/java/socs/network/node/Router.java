@@ -32,7 +32,7 @@ public class Router {
 
         if (packet.sospfType == 0)
         {
-          System.out.println("received HELLO from " + packet.srcProcessIP);
+          System.out.println("received HELLO from " + packet.srcIP);
         }
       }
     });
