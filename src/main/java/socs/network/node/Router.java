@@ -15,6 +15,7 @@ public class Router {
 
   RouterDescription rd = new RouterDescription();
   Server server;
+  int numConnections;
 
   //assuming that all routers are with 4 ports
   Link[] ports = new Link[4];
@@ -26,15 +27,21 @@ public class Router {
     server = new Server(rd.processPortNumber);
 
 
-    server.msgReceivedEvent.addHandler(new EventHandler<Integer, String>() {
-      public void handle(Integer eventArg1, String eventArg2) {
-        System.out.print("received + " + eventArg2 + " from " + server.clients[eventArg1]);
+    server.msgReceivedEvent.addHandler(new EventHandler<Integer, SOSPFPacket>() {
+      public void handle(Integer portNum, SOSPFPacket packet) {
+
+        if (packet.sospfType == 0)
+        {
+          System.out.println("received HELLO from " + packet.srcProcessIP);
+        }
       }
     });
 
     server.connectionAcceptedEvent.addHandler(new EventHandler<Integer, String>() {
       public void handle(Integer portNum, String host) {
-          //TODO add a link
+          //TODO remove
+        numConnections++;
+        System.out.println("Incoming connection: " + portNum + " " + host);
       }
     });
 
@@ -81,7 +88,9 @@ public class Router {
       }
 
       RouterDescription rdOther = new RouterDescription();
-
+      rdOther.processPortNumber = processPort;
+      rdOther.simulatedIPAddress = simulatedIP;
+      rdOther.processIPAddress = processIP;
 
       ports[index] =  new Link(this.rd, rdOther, weight);
   }
