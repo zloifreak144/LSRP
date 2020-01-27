@@ -25,8 +25,8 @@ public class Router {
     server = new Server(rd.processPortNumber);
 
     server.connectionAcceptedEvent.addHandler(new EventHandler<Integer, String>() {
-      public void handle(Integer eventArg1, String eventArg2) {
-
+      public void handle(Integer portNum, String host) {
+          //TODO add a link
       }
     });
 
