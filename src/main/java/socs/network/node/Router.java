@@ -1,6 +1,7 @@
 package socs.network.node;
 
 import socs.network.events.EventHandler;
+import socs.network.message.SOSPFPacket;
 import socs.network.networking.Server;
 import socs.network.util.Configuration;
 
@@ -28,7 +29,6 @@ public class Router {
     server.msgReceivedEvent.addHandler(new EventHandler<Integer, String>() {
       public void handle(Integer eventArg1, String eventArg2) {
         System.out.print("received + " + eventArg2 + " from " + server.clients[eventArg1]);
-
       }
     });
 
@@ -93,7 +93,18 @@ public class Router {
   {
     for (int i = 0;i < ports.length;i++)
     {
-     // server.send("HELLO",i);
+      if(ports[i] != null)
+      {
+        SOSPFPacket msg = new SOSPFPacket();
+        msg.srcProcessIP = rd.processIPAddress;
+        msg.srcProcessPort = rd.processPortNumber;
+        msg.srcIP = rd.simulatedIPAddress;
+        msg.dstIP = ports[i].router2.simulatedIPAddress;
+        msg.sospfType = 0;
+        //msg.neighborID = rd.simulatedIPAddress;
+        server.send(msg,i);
+      }
+
     }
   }
 

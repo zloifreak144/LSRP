@@ -96,7 +96,9 @@ public class Server
 
     public void send(SOSPFPacket msg, int index)
     {
-        clients[index].send(msg);
+        if(clients[index] != null){
+            clients[index].send(msg);
+        }
     }
 }
 
