@@ -23,6 +23,14 @@ public class Router {
     rd.processPortNumber = config.getShort("socs.network.router.port");
     lsd = new LinkStateDatabase(rd);
     server = new Server(rd.processPortNumber);
+
+    server.connectionAcceptedEvent.addHandler(new EventHandler<Integer, String>() {
+      public void handle(Integer eventArg1, String eventArg2) {
+
+      }
+    });
+
+
   }
 
   /**
@@ -56,7 +64,18 @@ public class Router {
   private void processAttach(String processIP, short processPort,
                              String simulatedIP, short weight)
   {
+      int index = getAvailableIndex();
 
+      if(index == -1)
+      {
+        System.err.println("ERROR! Unable to attach a process, ports[] full!");
+        return;
+      }
+
+      RouterDescription rdOther = new RouterDescription();
+
+
+      ports[index] =  new Link(this.rd, rdOther, weight);
   }
 
   /**
@@ -91,6 +110,24 @@ public class Router {
   private void processQuit() {
 
   }
+
+  /**
+   *
+   * @return Returns the index of a null entry, -1 on failure
+   */
+  private int getAvailableIndex()
+  {
+    for(int i = 0; i < ports.length; i++)
+    {
+      if(ports[i] == null)
+      {
+        return i;
+      }
+    }
+
+    return -1;
+  }
+
 
   public void terminal() {
     try {

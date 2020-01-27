@@ -2,6 +2,7 @@ package socs.network.networking;
 
 import com.sun.istack.internal.NotNull;
 import socs.network.events.Event;
+import socs.network.events.EventHandler;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -44,6 +45,13 @@ public class Server
                             }
 
                             ClientHandler clientHandler = new ClientHandler(client, index);
+
+                            clientHandler.msgReceived.addHandler(new EventHandler<Integer, String>() {
+                                public void handle(Integer index, String msg) {
+                                    msgReceivedEvent.invoke(index, msg);
+                                }
+                            });
+
                             new Thread(clientHandler).start();
                         }
                     }
@@ -77,8 +85,8 @@ public class Server
         try
         {
             Socket socket = new Socket();
-            InetAddress inetAddress = InetAddress.getByName("localHost");
-            SocketAddress bindingPoint = new InetSocketAddress(inetAddress, portNum);
+            InetAddress inetAddress = InetAddress.getByName(processIP);
+            SocketAddress bindingPoint = new InetSocketAddress(inetAddress, processPort);
             socket.bind(bindingPoint);
         }
         catch (Exception e)
