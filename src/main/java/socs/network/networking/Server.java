@@ -6,13 +6,14 @@ import socs.network.message.SOSPFPacket;
 
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class Server
 {
     private int portNum;
-    private ClientHandler[] clients = new ClientHandler[4];
-    private ClientHandler[] outcomingConnections = new ClientHandler[4];
+    private ArrayList<ConnectionHandler> pendingConnections = new ArrayList<>();
+    private ConnectionHandler[] links = new ConnectionHandler[4];
     public Event<Integer, SOSPFPacket> msgReceivedEvent = new Event<>();
     public Event<Integer, String> connectionAcceptedEvent = new Event<>();
 
@@ -33,19 +34,12 @@ public class Server
                     {
                         Socket client = server.accept();
                         connectionAcceptedEvent.invoke(client.getLocalPort(), client.getInetAddress().getHostName());
-                        int index = getAvailableIndex();
 
-                        if(index == -1)
-                        {
-                            System.err.println("ERROR! Connections Capacity Reached!");
-                            break;
-                        }
+                        ConnectionHandler connectionHandler = new ConnectionHandler(client);
 
-                        ClientHandler clientHandler = new ClientHandler(client, index);
-
-                        clientHandler.msgReceived.addHandler((EventHandler<Integer, SOSPFPacket>) (index1, msg) -> msgReceivedEvent.invoke(index1, msg));
-
-                        new Thread(clientHandler).start();
+                        connectionHandler.msgReceived.addHandler((EventHandler<Integer, SOSPFPacket>) (index1, msg) -> msgReceivedEvent.invoke(index1, msg));
+                        pendingConnections.add(connectionHandler);
+                        new Thread(connectionHandler).start();
                     }
                 }
                 catch(IOException e)
@@ -61,9 +55,9 @@ public class Server
      */
     private int getAvailableIndex()
     {
-        for(int i = 0; i < clients.length; i++)
+        for(int i = 0; i < links.length; i++)
         {
-            if(clients[i] == null)
+            if(links[i] == null)
             {
                 return i;
             }
@@ -79,9 +73,17 @@ public class Server
         try
         {
             socket = new Socket(processIP, processPort);
+            int index = getAvailableIndex();
+            if(index == -1)
+            {
+                System.err.println("ERROR! Port capacity reached!");
+                socket.close();
+                return false;
+            }
 
-            //TODO need to create the clientHandlers and store them somewhere to make proper communication
-
+            ConnectionHandler connectionHandler = new ConnectionHandler(socket, index);
+            links[index] = connectionHandler;
+            new Thread(connectionHandler).start();
         }
         catch (IOException e)
         {
@@ -94,15 +96,15 @@ public class Server
 
     public void send(SOSPFPacket msg, int index)
     {
-        if(clients[index] != null){
+        if(links[index] != null){
             System.out.println("HERE");
-            clients[index].send(msg);
+            links[index].send(msg);
         }
     }
 }
 
 
-class ClientHandler implements Runnable
+class ConnectionHandler implements Runnable
 {
     private Socket client;
     private int index;
@@ -110,7 +112,7 @@ class ClientHandler implements Runnable
     private ObjectOutputStream toClient = null;
     public Event<Integer, SOSPFPacket> msgReceived = new Event<Integer, SOSPFPacket>();
 
-    ClientHandler(Socket client, int index)
+    ConnectionHandler(Socket client, int index)
     {
         this.client = client;
         this.index = index;
@@ -132,6 +134,12 @@ Or phrased differently: If both sides first construct the ObjectInputStream, bot
         {
             System.err.println("ERROR! Failed to initialize Client Handler streams\n " + e.getMessage());
         }
+    }
+
+    ConnectionHandler(Socket client)
+    {
+        //-1 means that the connection is not a link
+        this(client, -1);
     }
 
     private SOSPFPacket recv() throws Exception
