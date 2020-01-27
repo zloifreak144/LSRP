@@ -3,7 +3,7 @@ package socs.network.events;
 import java.util.ArrayList;
 
 public class Event<T, R> {
-    private ArrayList<EventHandler<T, R>> handlers;
+    private ArrayList<EventHandler<T, R>> handlers = new ArrayList<EventHandler<T, R>>();
 
     public void invoke(T eventArg1, R eventArg2)
     {

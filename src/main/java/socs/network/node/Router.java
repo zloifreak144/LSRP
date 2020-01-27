@@ -6,7 +6,9 @@ import socs.network.networking.Server;
 import socs.network.util.Configuration;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.Socket;
 
 
 public class Router {
@@ -26,26 +28,49 @@ public class Router {
     lsd = new LinkStateDatabase(rd);
     server = new Server(rd.processPortNumber);
 
+    server.msgReceivedEvent.addHandler((EventHandler<Integer, SOSPFPacket>) (portNum, packet) ->
+    {
 
-    server.msgReceivedEvent.addHandler(new EventHandler<Integer, SOSPFPacket>() {
-      public void handle(Integer portNum, SOSPFPacket packet) {
+      if (packet.sospfType == 0)
+      {
+        System.out.println("received HELLO from " + packet.srcIP);
 
-        if (packet.sospfType == 0)
+        if(!LinkExists(packet.srcIP))
         {
-          System.out.println("received HELLO from " + packet.srcIP);
+          //TODO implement the protocol where they send the "HELLO" to each other
+          //TODO find a way to get the proper weight
+          addLink(packet.srcProcessIP, packet.srcProcessPort, packet.srcIP, (short) 0);
+
         }
       }
-    });
 
-    server.connectionAcceptedEvent.addHandler(new EventHandler<Integer, String>() {
-      public void handle(Integer portNum, String host) {
-          //TODO remove
-        numConnections++;
-        System.out.println("Incoming connection: " + portNum + " " + host);
+      if(packet.sospfType == 1)
+      {
+        System.out.println("received LSAUPDATE from " + packet.srcIP);
       }
     });
 
+    server.connectionAcceptedEvent.addHandler((EventHandler<Integer, String>) (portNum, host) ->
+    {
+        //TODO remove
+      numConnections++;
+      System.out.println("Incoming connection: " + portNum + " " + host);
+    });
 
+
+  }
+
+  private boolean LinkExists(String simIP)
+  {
+    for(Link port : ports)
+    {
+      if(port.router2.simulatedIPAddress.equals(simIP))
+      {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -79,28 +104,37 @@ public class Router {
   private void processAttach(String processIP, short processPort,
                              String simulatedIP, short weight)
   {
-      int index = getAvailableIndex();
-
-      if(index == -1)
+      if(server.tryAttach(processIP, processPort))
       {
-        System.err.println("ERROR! Unable to attach a process, ports[] full!");
-        return;
+        addLink(processIP, processPort, simulatedIP, weight);
       }
-
-      RouterDescription rdOther = new RouterDescription();
-      rdOther.processPortNumber = processPort;
-      rdOther.simulatedIPAddress = simulatedIP;
-      rdOther.processIPAddress = processIP;
-
-      ports[index] =  new Link(this.rd, rdOther, weight);
   }
+
+  private void addLink(String processIP, short processPort, String simulatedIP, short weight)
+  {
+    int index = getAvailableIndex();
+
+    if(index == -1)
+    {
+      System.err.println("ERROR! Unable to attach a process, ports[] full!");
+      return ;
+    }
+
+    RouterDescription rdOther = new RouterDescription();
+    rdOther.processPortNumber = processPort;
+    rdOther.simulatedIPAddress = simulatedIP;
+    rdOther.processIPAddress = processIP;
+
+    ports[index] =  new Link(this.rd, rdOther, weight);
+  }
+
 
   /**
    * broadcast Hello to neighbors
    */
   private void processStart()
   {
-    for (int i = 0;i < ports.length;i++)
+    for (int i = 0; i < ports.length; i++)
     {
       if(ports[i] != null)
       {
@@ -112,9 +146,15 @@ public class Router {
         msg.sospfType = 0;
         //msg.neighborID = rd.simulatedIPAddress;
         server.send(msg,i);
+
+        rd.status = RouterStatus.INIT;
       }
 
     }
+  }
+
+  private void send(String processIP, short processPort)
+  {
   }
 
   /**
