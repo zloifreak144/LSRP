@@ -1,14 +1,14 @@
 package socs.network.node;
 
+import socs.network.events.Event;
 import socs.network.events.EventHandler;
+import socs.network.message.LinkDescription;
 import socs.network.message.SOSPFPacket;
 import socs.network.networking.Server;
 import socs.network.util.Configuration;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.Socket;
 
 
 public class Router {
@@ -26,7 +26,19 @@ public class Router {
     rd.simulatedIPAddress = config.getString("socs.network.router.ip");
     rd.processPortNumber = config.getShort("socs.network.router.port");
     lsd = new LinkStateDatabase(rd);
-    server = new Server(rd.processPortNumber);
+    server = new Server(rd.processPortNumber, rd.simulatedIPAddress);
+
+    server.linkCreatedEvent.addHandler((EventHandler<Integer, Server.LinkDescription>) (portIndex, link) ->
+    {
+      //figure out the weight
+      addLink(link.srcProcessIP, link.srcProcessPort, link.srcIP, portIndex, (short) 0);
+    });
+
+    server.linkRemovedEvent.addHandler((EventHandler<Integer, Server.LinkDescription>) (portIndex, link)->
+    {
+      ports[portIndex] = null;
+    });
+
 
     server.msgReceivedEvent.addHandler((EventHandler<Integer, SOSPFPacket>) (portNum, packet) ->
     {
@@ -34,19 +46,16 @@ public class Router {
       if (packet.sospfType == 0)
       {
         System.out.println("received HELLO from " + packet.srcIP);
-
-        if(!LinkExists(packet.srcIP))
-        {
-          //TODO implement the protocol where they send the "HELLO" to each other
-          //TODO find a way to get the proper weight
-          addLink(packet.srcProcessIP, packet.srcProcessPort, packet.srcIP, (short) 0);
-
-        }
       }
 
       if(packet.sospfType == 1)
       {
         System.out.println("received LSAUPDATE from " + packet.srcIP);
+      }
+
+      if(packet.sospfType == 2)
+      {
+        System.out.println("received CONNECTION_REFUSE from " + packet.srcIP);
       }
     });
 
@@ -60,6 +69,7 @@ public class Router {
 
   }
 
+  //TODO check if we need to use it
   private boolean LinkExists(String simIP)
   {
     for(Link port : ports)
@@ -104,22 +114,11 @@ public class Router {
   private void processAttach(String processIP, short processPort,
                              String simulatedIP, short weight)
   {
-      if(server.tryAttach(processIP, processPort))
-      {
-        addLink(processIP, processPort, simulatedIP, weight);
-      }
+      server.attach(processIP, simulatedIP , processPort);
   }
 
-  private void addLink(String processIP, short processPort, String simulatedIP, short weight)
+  private void addLink(String processIP, short processPort, String simulatedIP, int index ,short weight)
   {
-    int index = getAvailableIndex();
-
-    if(index == -1)
-    {
-      System.err.println("ERROR! Unable to attach a process, ports[] full!");
-      return ;
-    }
-
     RouterDescription rdOther = new RouterDescription();
     rdOther.processPortNumber = processPort;
     rdOther.simulatedIPAddress = simulatedIP;
