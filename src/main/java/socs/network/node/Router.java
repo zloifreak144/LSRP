@@ -40,12 +40,26 @@ public class Router {
     });
 
 
-    server.msgReceivedEvent.addHandler((EventHandler<Integer, SOSPFPacket>) (portNum, packet) ->
+    server.msgReceivedEvent.addHandler((EventHandler<Integer, SOSPFPacket>) (index, packet) ->
     {
 
       if (packet.sospfType == 0)
       {
         System.out.println("received HELLO from " + packet.srcIP);
+
+        if(ports[index].router2.getStatus() == RouterStatus.INIT)
+        {
+          SOSPFPacket response = new SOSPFPacket(packet);
+
+          response.srcIP = packet.dstIP;
+          response.dstIP = packet.srcIP;
+          response.srcProcessIP = rd.processIPAddress;
+          response.srcProcessPort = rd.processPortNumber;
+
+          server.send(response, index);
+          ports[index].router2.setStatus(RouterStatus.TWO_WAY);
+        }
+
       }
 
       if(packet.sospfType == 1)
@@ -123,6 +137,7 @@ public class Router {
     rdOther.processPortNumber = processPort;
     rdOther.simulatedIPAddress = simulatedIP;
     rdOther.processIPAddress = processIP;
+    rdOther.setStatus(RouterStatus.INIT);
 
     ports[index] =  new Link(this.rd, rdOther, weight);
   }
@@ -145,8 +160,6 @@ public class Router {
         msg.sospfType = 0;
         //msg.neighborID = rd.simulatedIPAddress;
         server.send(msg,i);
-
-        rd.status = RouterStatus.INIT;
       }
 
     }

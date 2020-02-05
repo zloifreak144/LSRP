@@ -41,32 +41,8 @@ public class Server
 
                         ConnectionHandler connectionHandler = new ConnectionHandler(client);
 
-                        connectionHandler.msgReceived.addHandler((EventHandler<Integer, SOSPFPacket>) (index1, msg) ->
-                        {
-                            //NOTE: Server.links and Router.ports should be syncronized
+                        init_connectionHandler(connectionHandler);
 
-                            //Hello received from a pending connection
-                            if(msg.sospfType == 0 && connectionHandler.getIndex() == -1)
-                            {
-                               handleHello(connectionHandler, msg);
-                            }
-
-                            if(msg.sospfType == 1)
-                            {
-                                //TODO implement
-                                handleLSAUPDATE(connectionHandler, msg);
-                            }
-
-                            //TODO again verify that it is a correct way to do it
-                            //If connection was refused remove the link created on attach
-                            if(msg.sospfType == 2)
-                            {
-                                handleConnectionRefused(connectionHandler, msg);
-                            }
-
-
-                            msgReceivedEvent.invoke(index1, msg);
-                        });
                         pendingConnections.add(connectionHandler);
                         new Thread(connectionHandler).start();
                     }
@@ -95,6 +71,37 @@ public class Server
         return -1;
     }
 
+    private void init_connectionHandler(ConnectionHandler connectionHandler)
+    {
+        connectionHandler.msgReceived.addHandler((EventHandler<Integer, SOSPFPacket>) (index1, msg) ->
+        {
+            //NOTE: Server.links and Router.ports should be syncronized
+            //Hello received from a pending connection
+            if(msg.sospfType == 0 && connectionHandler.index == -1)
+            {
+                handleHello(connectionHandler, msg);
+            }
+            else
+            {
+                msgReceivedEvent.invoke(index1, msg);
+            }
+
+            if(msg.sospfType == 1)
+            {
+                //TODO implement
+                handleLSAUPDATE(connectionHandler, msg);
+            }
+
+            //TODO again verify that it is a correct way to do it
+            //If connection was refused remove the link created on attach
+            if(msg.sospfType == 2)
+            {
+                handleConnectionRefused(connectionHandler, msg);
+            }
+
+        });
+    }
+
     private void handleHello(ConnectionHandler connectionHandler, SOSPFPacket msg)
     {
         int index = getAvailableIndex();
@@ -118,12 +125,13 @@ public class Server
 
             connectionHandler.send(response);
             //TODO make sure removes are done properly
-            connectionHandler.close();
+           // connectionHandler.close();
             return;
         }
 
         //remove from pending add to link
         pendingConnections.remove(connectionHandler);
+        connectionHandler.index = index;
         links[index] = connectionHandler;
 
         LinkDescription linkDescription = new LinkDescription();
@@ -132,6 +140,7 @@ public class Server
         linkDescription.srcProcessIP = msg.srcProcessIP;
 
         linkCreatedEvent.invoke(index, linkDescription);
+        msgReceivedEvent.invoke(index, msg);
     }
 
     //TODO implement
@@ -143,7 +152,7 @@ public class Server
 
     private void handleConnectionRefused(ConnectionHandler connectionHandler, SOSPFPacket msg)
     {
-        int linkIndex = connectionHandler.getIndex();
+        int linkIndex = connectionHandler.index;
 
         System.out.println("Handling remove");
 
@@ -160,6 +169,8 @@ public class Server
 
             linkRemovedEvent.invoke(linkIndex, linkDescription);
         }
+
+        msgReceivedEvent.invoke(linkIndex, msg);
     }
 
     public void attach(String processIP, String simulatedIP ,short processPort)
@@ -178,6 +189,7 @@ public class Server
             }
 
             ConnectionHandler connectionHandler = new ConnectionHandler(socket, index);
+            init_connectionHandler(connectionHandler);
             links[index] = connectionHandler;
 
             LinkDescription link = new LinkDescription();
@@ -219,11 +231,10 @@ public class Server
 class ConnectionHandler implements Runnable
 {
     private Socket client;
-    private int index;
+    public int index;
     private String incomingIP; //this is initialized only once the message is received
     private ObjectInputStream fromClient = null;
     private ObjectOutputStream toClient = null;
-    private boolean run = true;
     public Event<Integer, SOSPFPacket> msgReceived = new Event<Integer, SOSPFPacket>();
 
     ConnectionHandler(Socket client, int index)
@@ -277,7 +288,7 @@ Or phrased differently: If both sides first construct the ObjectInputStream, bot
     {
         try
         {
-            while(run)
+            while(true)
             {
                 SOSPFPacket msg = recv();
                 incomingIP = msg.srcIP;
@@ -298,8 +309,6 @@ Or phrased differently: If both sides first construct the ObjectInputStream, bot
 
     public void close()
     {
-        run = false;
-
         try
         {
             fromClient.close();
@@ -312,15 +321,14 @@ Or phrased differently: If both sides first construct the ObjectInputStream, bot
         }
     }
 
-
-    public int getIndex()
-    {
-        return index;
-    }
-
     public String getIncomingIP()
     {
         return  incomingIP;
+    }
+
+    public int getNumListeners()
+    {
+        return msgReceived.getNumHandlers();
     }
 
 }

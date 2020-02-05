@@ -26,4 +26,21 @@ public class SOSPFPacket implements Serializable {
   //used by LSAUPDATE
   public Vector<LSA> lsaArray = null;
 
+  public SOSPFPacket()
+  {
+
+  }
+
+  public SOSPFPacket(SOSPFPacket packet)
+  {
+    srcIP = packet.srcIP;
+    srcProcessPort = packet.srcProcessPort;
+    srcProcessIP = packet.srcProcessIP;
+    dstIP = packet.dstIP;
+    sospfType = packet.sospfType;
+    routerID = packet.routerID;
+    neighborID = packet.neighborID;
+
+    //TODO migh need to add lsaArray to later steps
+  }
 }

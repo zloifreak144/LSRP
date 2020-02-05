@@ -7,5 +7,17 @@ public class RouterDescription {
   //used to identify the router in the simulated network space
   String simulatedIPAddress;
   //status of the router
-  RouterStatus status;
+  private RouterStatus status = RouterStatus.NONE;
+
+  public void setStatus(RouterStatus status)
+  {
+    this.status = status;
+
+    System.out.println("Router status of router: " + simulatedIPAddress + ":" + processPortNumber  + " set to " + status);
+  }
+
+  public RouterStatus getStatus()
+  {
+    return status;
+  }
 }

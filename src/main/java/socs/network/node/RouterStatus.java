@@ -6,6 +6,8 @@ package socs.network.node;
  * in router class or you can add more options here
  */
 public enum RouterStatus {
+
+  NONE,
   INIT,
   TWO_WAY,
 }
