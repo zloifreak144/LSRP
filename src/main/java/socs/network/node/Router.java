@@ -71,11 +71,14 @@ public class Router {
       {
         System.out.println("received CONNECTION_REFUSE from " + packet.srcIP);
       }
+      else
+      {
+        System.out.println("received unknown packet type from " + packet.srcIP);
+      }
     });
 
     server.connectionAcceptedEvent.addHandler((EventHandler<Integer, String>) (portNum, host) ->
     {
-        //TODO remove
       numConnections++;
       System.out.println("Incoming connection: " + portNum + " " + host);
     });
@@ -128,6 +131,12 @@ public class Router {
   private void processAttach(String processIP, short processPort,
                              String simulatedIP, short weight)
   {
+      if(simulatedIP.equals(rd.simulatedIPAddress))
+      {
+        System.err.println("Operation Denied! Router cannot attach to itself.");
+        return;
+      }
+
       server.attach(processIP, simulatedIP , processPort);
   }
 
@@ -150,7 +159,7 @@ public class Router {
   {
     for (int i = 0; i < ports.length; i++)
     {
-      if(ports[i] != null)
+      if(ports[i] != null && ports[i].router2.getStatus() != RouterStatus.TWO_WAY)
       {
         SOSPFPacket msg = new SOSPFPacket();
         msg.srcProcessIP = rd.processIPAddress;

@@ -17,6 +17,4 @@ public class Event<T, R> {
     {
         handlers.add(handler);
     }
-
-    public int getNumHandlers() {return handlers.size();}
 }

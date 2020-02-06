@@ -40,7 +40,5 @@ public class SOSPFPacket implements Serializable {
     sospfType = packet.sospfType;
     routerID = packet.routerID;
     neighborID = packet.neighborID;
-
-    //TODO migh need to add lsaArray to later steps
   }
 }

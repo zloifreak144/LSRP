@@ -50,6 +50,7 @@ public class Server
                 catch(IOException e)
                 {
                     System.err.println("FATAL_ERROR! Server thread interrupted\n" + e.getMessage());
+                    System.exit(-1);
                 }
         }).start();
     }
@@ -81,7 +82,7 @@ public class Server
             {
                 handleHello(connectionHandler, msg);
             }
-            else
+            else if(msg.sospfType == 0)
             {
                 msgReceivedEvent.invoke(index1, msg);
             }
@@ -98,6 +99,10 @@ public class Server
             {
                 handleConnectionRefused(connectionHandler, msg);
             }
+            else
+            {
+                msgReceivedEvent.invoke(index1, msg);
+            }
 
         });
     }
@@ -106,26 +111,24 @@ public class Server
     {
         int index = getAvailableIndex();
 
-        //TODO send connection_refuse does not work
         //Links full
         if(index == -1)
         {
             System.out.println("Server capacity reached! Connection attempt refused to " + connectionHandler.getIncomingIP());
-            //TODO check if we actually need to remove them
+
             pendingConnections.remove(connectionHandler);
 
             SOSPFPacket response = new SOSPFPacket();
             response.sospfType = 2; //Connection refused
 
-            //TODO remove the hardcoded version of the srcProcessIP
             response.srcProcessIP = "localHost";
             response.dstIP = connectionHandler.getIncomingIP();
             response.srcIP = ip;
             response.srcProcessPort = (short) portNum;
 
             connectionHandler.send(response);
-            //TODO make sure removes are done properly
-           // connectionHandler.close();
+
+            connectionHandler.close();
             return;
         }
 
@@ -154,11 +157,8 @@ public class Server
     {
         int linkIndex = connectionHandler.index;
 
-        System.out.println("Handling remove");
-
         if(linkIndex != -1)
         {
-            System.out.println("Removing link");
             links[linkIndex].close();
             links[linkIndex] = null;
 
@@ -212,11 +212,6 @@ public class Server
         {
             links[index].send(msg);
         }
-    }
-
-    public void sync(Link[] ports)
-    {
-        //TODO might need to implement this
     }
 
     public class LinkDescription
@@ -297,8 +292,7 @@ Or phrased differently: If both sides first construct the ObjectInputStream, bot
         }
         catch(SocketException e)
         {
-            //TODO change the exception message
-            System.out.println("Client disconnected");
+            System.out.println("Client " + incomingIP + " disconnected: " + e.getMessage());
             close();
         }
         catch (Exception e)
@@ -325,10 +319,4 @@ Or phrased differently: If both sides first construct the ObjectInputStream, bot
     {
         return  incomingIP;
     }
-
-    public int getNumListeners()
-    {
-        return msgReceived.getNumHandlers();
-    }
-
 }
