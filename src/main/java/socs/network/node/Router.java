@@ -62,12 +62,12 @@ public class Router {
 
       }
 
-      if(packet.sospfType == 1)
+      else if(packet.sospfType == 1)
       {
         System.out.println("received LSAUPDATE from " + packet.srcIP);
       }
 
-      if(packet.sospfType == 2)
+      else if(packet.sospfType == 2)
       {
         System.out.println("received CONNECTION_REFUSE from " + packet.srcIP);
       }
@@ -194,14 +194,22 @@ public class Router {
    * output the neighbors of the routers
    */
   private void processNeighbors() {
-
+    for(int i=0;i<ports.length;i++)
+    {
+      if(ports[i] != null)
+      {
+        System.out.println("IP Address of the neighbor"+ i +": " + ports[i].router2.simulatedIPAddress);
+      }
+    }
   }
 
   /**
    * disconnect with all neighbors and quit the program
    */
-  private void processQuit() {
-
+  private void processQuit()
+  {
+    //TODO implement disconnection from a client
+    server.close();
   }
 
   /**
@@ -237,6 +245,7 @@ public class Router {
           processDisconnect(Short.parseShort(cmdLine[1]));
         } else if (command.startsWith("quit")) {
           processQuit();
+          break;
         } else if (command.startsWith("attach ")) {
           String[] cmdLine = command.split(" ");
           processAttach(cmdLine[1], Short.parseShort(cmdLine[2]),
@@ -252,11 +261,12 @@ public class Router {
           processNeighbors();
         } else {
           //invalid command
-          break;
+          System.err.println("Invalid command");
         }
         System.out.print(">> ");
         command = br.readLine();
       }
+
       isReader.close();
       br.close();
     } catch (Exception e) {

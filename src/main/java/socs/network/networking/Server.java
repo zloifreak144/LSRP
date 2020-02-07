@@ -19,6 +19,7 @@ public class Server
     public Event<Integer, String> connectionAcceptedEvent = new Event<>();
     public Event<Integer, LinkDescription> linkCreatedEvent = new Event<>();
     public Event<Integer, LinkDescription> linkRemovedEvent = new Event<>();
+    private ServerSocket server;
 
     public Server(int portNum, String ip)
     {
@@ -33,7 +34,7 @@ public class Server
             {
                 try
                 {
-                    ServerSocket server = new ServerSocket(portNum);
+                    server = new ServerSocket(portNum);
                     while (true)
                     {
                         Socket client = server.accept();
@@ -54,6 +55,35 @@ public class Server
                 }
         }).start();
     }
+
+    /**
+     * Close all connections and the server
+     */
+    public void close()
+    {
+        for(int i=0;i<links.length;i++)
+        {
+            if(links[i] != null)
+            {
+                links[i].close();
+            }
+        }
+
+        for(ConnectionHandler connection: pendingConnections)
+        {
+            if(connection != null)
+            {
+                connection.close();
+            }
+        }
+
+        try {
+            server.close();
+        } catch (Exception e){
+            //do nothing
+        }
+    }
+
 
     /**
      *
@@ -82,12 +112,7 @@ public class Server
             {
                 handleHello(connectionHandler, msg);
             }
-            else if(msg.sospfType == 0)
-            {
-                msgReceivedEvent.invoke(index1, msg);
-            }
-
-            if(msg.sospfType == 1)
+            else if(msg.sospfType == 1)
             {
                 //TODO implement
                 handleLSAUPDATE(connectionHandler, msg);
@@ -95,7 +120,7 @@ public class Server
 
             //TODO again verify that it is a correct way to do it
             //If connection was refused remove the link created on attach
-            if(msg.sospfType == 2)
+            else if(msg.sospfType == 2)
             {
                 handleConnectionRefused(connectionHandler, msg);
             }
