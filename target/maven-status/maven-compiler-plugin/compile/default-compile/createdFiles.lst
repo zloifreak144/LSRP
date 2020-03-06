@@ -1,2 +1,4 @@
 socs\network\networking\Server$LinkDescription.class
+socs\network\node\LinkStateDatabase$PathSegment.class
 socs\network\networking\ConnectionHandler.class
+socs\network\node\LinkStateDatabase$Path.class

@@ -239,7 +239,8 @@ public class Router {
         resend = true;
       }
     }
-    //System.out.println("\nupdated lsd: \n" + lsd);
+    System.out.println("\nupdated lsd: \n" + lsd);
+    System.out.println("Jakushka");
     return resend;
   }
 
