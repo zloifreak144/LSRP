@@ -4,6 +4,7 @@ import socs.network.message.LSA;
 import socs.network.message.LinkDescription;
 import socs.network.message.SOSPFPacket;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -72,6 +73,80 @@ public class LinkStateDatabase {
       sb.append("\n");
     }
     return sb.toString();
+  }
+
+  public Path getShortestPath()
+  {
+
+  }
+
+  class Path
+  {
+    ArrayList<PathSegment> path = new ArrayList<>();
+
+    void addSegment(String srcID, String destID, short weight)
+    {
+      path.add(new PathSegment(srcID, destID, weight));
+    }
+
+    void removeFrom(String srcID)
+    {
+      int index = -1;
+
+      for(int i = 0; i < path.size(); i++)
+      {
+        PathSegment temp = path.get(i);
+
+        if(temp.getSrcID().equals(srcID))
+        {
+          index = i;
+        }
+      }
+
+      if(index != -1)
+      {
+        for(int i = index; i < path.size(); i++)
+        {
+          path.remove(i);
+        }
+      }
+
+    }
+
+    @Override
+    public String toString() {
+      String path ="";
+
+      for(PathSegment segment : this.path)
+      {
+        path += segment + " --> ";
+      }
+
+      return path;
+    }
+  }
+
+  class PathSegment
+  {
+    short weight;
+    String srcID;
+    String destID;
+
+    PathSegment(String srcID, String destID, short weight)
+    {
+      this.weight = weight;
+      this.srcID = srcID;
+      this.destID = destID;
+    }
+
+    short getWeight() { return weight; }
+    String getDestID() { return srcID; }
+    String getSrcID() { return destID; }
+
+    @Override
+    public String toString() {
+      return srcID + "-(" + weight + ")-" + destID;
+    }
   }
 
 }
