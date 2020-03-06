@@ -19,6 +19,7 @@ public class Server
     public Event<Integer, String> connectionAcceptedEvent = new Event<>();
     public Event<Integer, LinkDescription> linkCreatedEvent = new Event<>();
     public Event<Integer, LinkDescription> linkRemovedEvent = new Event<>();
+    public Event<Integer, SOSPFPacket> lsUpdateEvent = new Event<>();
     private ServerSocket server;
 
     public Server(int portNum, String ip)
@@ -114,7 +115,6 @@ public class Server
             }
             else if(msg.sospfType == 1)
             {
-                //TODO implement
                 handleLSAUPDATE(connectionHandler, msg);
             }
 
@@ -139,7 +139,7 @@ public class Server
         //Links full
         if(index == -1)
         {
-            System.out.println("Server capacity reached! Connection attempt refused to " + connectionHandler.getIncomingIP());
+            System.out.println("Server capacity reachawed! Connection attempt refused to " + connectionHandler.getIncomingIP());
 
             pendingConnections.remove(connectionHandler);
 
@@ -167,6 +167,7 @@ public class Server
         linkDescription.srcProcessPort = msg.srcProcessPort;
         linkDescription.srcProcessIP = msg.srcProcessIP;
 
+
         linkCreatedEvent.invoke(index, linkDescription);
         msgReceivedEvent.invoke(index, msg);
     }
@@ -174,7 +175,9 @@ public class Server
     //TODO implement
     private void handleLSAUPDATE(ConnectionHandler connectionHandler, SOSPFPacket msg)
     {
-
+        //TODO integer must be somehow used
+        lsUpdateEvent.invoke(0,msg);
+        msgReceivedEvent.invoke(0, msg);
     }
 
 
@@ -198,7 +201,7 @@ public class Server
         msgReceivedEvent.invoke(linkIndex, msg);
     }
 
-    public void attach(String processIP, String simulatedIP ,short processPort)
+    public void attach(String processIP, String simulatedIP ,short processPort, short weight)
     {
         Socket socket = null;
 
@@ -221,6 +224,7 @@ public class Server
             link.srcIP = simulatedIP;
             link.srcProcessPort = processPort;
             link.srcProcessIP = processIP;
+            link.weight = weight;
 
             linkCreatedEvent.invoke(index, link);
             new Thread(connectionHandler).start();
@@ -244,6 +248,7 @@ public class Server
         public String srcProcessIP;
         public short srcProcessPort;
         public String srcIP;
+        public short weight;
     }
 }
 
@@ -294,6 +299,14 @@ Or phrased differently: If both sides first construct the ObjectInputStream, bot
 
     public void send(SOSPFPacket msg)
     {
+        try {
+            toClient.flush();
+            toClient.reset();
+        } catch (Exception e)
+        {
+
+        }
+
         try
         {
             toClient.writeObject(msg);
@@ -308,8 +321,7 @@ Or phrased differently: If both sides first construct the ObjectInputStream, bot
     {
         try
         {
-            while(true)
-            {
+            while(true) {
                 SOSPFPacket msg = recv();
                 incomingIP = msg.srcIP;
                 msgReceived.invoke(index, msg);
@@ -344,4 +356,6 @@ Or phrased differently: If both sides first construct the ObjectInputStream, bot
     {
         return  incomingIP;
     }
+
+
 }

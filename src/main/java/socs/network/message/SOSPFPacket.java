@@ -24,7 +24,11 @@ public class SOSPFPacket implements Serializable {
   public String neighborID; //neighbor's simulated IP address
 
   //used by LSAUPDATE
-  public Vector<LSA> lsaArray = null;
+  public Vector<LSA> lsaArray = new Vector<LSA>();
+
+  //this is used for server to know how far is the client
+  public short weight = -1;
+
 
   public SOSPFPacket()
   {
@@ -40,5 +44,18 @@ public class SOSPFPacket implements Serializable {
     sospfType = packet.sospfType;
     routerID = packet.routerID;
     neighborID = packet.neighborID;
+    if(!packet.lsaArray.isEmpty()) {
+      for (LSA lsa : packet.lsaArray) {
+        lsaArray.add(lsa);
+      }
+    }
+  }
+
+  private boolean isEmpty(){
+    return lsaArray.size() == 0;
+  }
+
+  public String toString(){
+    return "srcIP: " + srcIP + "\nsrcProcessPort: "+ srcProcessPort + "\ndstIP: " + dstIP + "\nsospfType: " + sospfType;
   }
 }

@@ -2,6 +2,7 @@ package socs.network.node;
 
 import socs.network.events.Event;
 import socs.network.events.EventHandler;
+import socs.network.message.LSA;
 import socs.network.message.LinkDescription;
 import socs.network.message.SOSPFPacket;
 import socs.network.networking.Server;
@@ -9,6 +10,8 @@ import socs.network.util.Configuration;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.LinkedList;
+import java.util.Vector;
 
 
 public class Router {
@@ -30,8 +33,7 @@ public class Router {
 
     server.linkCreatedEvent.addHandler((EventHandler<Integer, Server.LinkDescription>) (portIndex, link) ->
     {
-      //figure out the weight
-      addLink(link.srcProcessIP, link.srcProcessPort, link.srcIP, portIndex, (short) 0);
+      addLink(link.srcProcessIP, link.srcProcessPort, link.srcIP, portIndex, link.weight);
     });
 
     server.linkRemovedEvent.addHandler((EventHandler<Integer, Server.LinkDescription>) (portIndex, link)->
@@ -39,6 +41,32 @@ public class Router {
       ports[portIndex] = null;
     });
 
+    server.lsUpdateEvent.addHandler((EventHandler<Integer,SOSPFPacket>) (num,msg) -> {
+
+      boolean resend = updateLSD(msg);
+      SOSPFPacket newMsg = new SOSPFPacket(msg);
+      newMsg.srcIP = rd.simulatedIPAddress;
+      newMsg.srcProcessPort = rd.processPortNumber;
+      //forward the message
+      for (int i = 0;i < ports.length;i++)
+      {
+        if(ports[i] != null && !ports[i].router2.simulatedIPAddress.equals(msg.srcIP))
+        {
+          newMsg.dstIP = ports[i].router2.simulatedIPAddress;
+          if(resend) {
+            newMsg.lsaArray.clear();
+
+            for(LSA lsa : lsd._store.values()){
+              newMsg.lsaArray.add(lsa);
+            }
+          }
+          server.send(newMsg,i);
+        }
+      }
+
+
+
+    });
 
     server.msgReceivedEvent.addHandler((EventHandler<Integer, SOSPFPacket>) (index, packet) ->
     {
@@ -58,6 +86,9 @@ public class Router {
 
           server.send(response, index);
           ports[index].router2.setStatus(RouterStatus.TWO_WAY);
+          if(packet.weight != -1) ports[index].weight = packet.weight;
+          lsd.update(ports[index]);
+          sendLSUpdate();
         }
 
       }
@@ -137,7 +168,7 @@ public class Router {
         return;
       }
 
-      server.attach(processIP, simulatedIP , processPort);
+      server.attach(processIP, simulatedIP , processPort, weight);
   }
 
   private void addLink(String processIP, short processPort, String simulatedIP, int index ,short weight)
@@ -147,9 +178,75 @@ public class Router {
     rdOther.simulatedIPAddress = simulatedIP;
     rdOther.processIPAddress = processIP;
     rdOther.setStatus(RouterStatus.INIT);
-
     ports[index] =  new Link(this.rd, rdOther, weight);
   }
+
+  /**
+   * returns if it is needed to send the new state of this db
+   * @param msg
+   * @return
+   */
+  private boolean updateLSD(SOSPFPacket msg) {
+    boolean resend = false;
+    for (LSA msgLSA : msg.lsaArray) {
+      LSA dbLSA = null;
+
+      for (LSA tmp : lsd._store.values()) {
+        if (msgLSA.linkStateID.equals(tmp.linkStateID)) {
+          dbLSA = tmp;
+        }
+      }
+
+      if (dbLSA != null) {
+        if (msgLSA.lsaSeqNumber > dbLSA.lsaSeqNumber) {
+
+          for(LinkDescription ld1 : msgLSA.links)
+          {
+            boolean exists = false;
+            for (LinkDescription ld2 : dbLSA.links)
+            {
+              if (ld1.linkID.equals(ld2.linkID)){
+                exists = true;
+                break;
+              }
+            }
+            if (!exists) {
+              dbLSA.links.add(ld1);
+              dbLSA.lsaSeqNumber++;
+              resend = true;
+            }
+         }
+        }
+      } else {
+        lsd._store.put(msgLSA.linkStateID, msgLSA);
+        resend = true;
+      }
+    }
+    System.out.println("\nupdated lsd: \n" + lsd);
+    return resend;
+  }
+
+  //send lsupdate after start/connect/disconnect
+  private void sendLSUpdate(){
+    final SOSPFPacket msg = new SOSPFPacket();
+    msg.srcProcessIP = rd.processIPAddress;
+    msg.srcProcessPort = rd.processPortNumber;
+    msg.srcIP = rd.simulatedIPAddress;
+    msg.sospfType = 1;
+    msg.lsaArray = new Vector<LSA>();
+
+    for(LSA lsa : lsd._store.values()){
+      msg.lsaArray.add(lsa);
+    }
+    for (int i = 0;i < ports.length;i++) {
+      if (ports[i] != null) {
+        msg.dstIP = ports[i].router2.simulatedIPAddress;
+        server.send(msg, i);
+      }
+    }
+  }
+
+
 
 
   /**
@@ -167,6 +264,7 @@ public class Router {
         msg.srcIP = rd.simulatedIPAddress;
         msg.dstIP = ports[i].router2.simulatedIPAddress;
         msg.sospfType = 0;
+        msg.weight = ports[i].weight;
         //msg.neighborID = rd.simulatedIPAddress;
         server.send(msg,i);
       }
@@ -209,6 +307,7 @@ public class Router {
   private void processQuit()
   {
     //TODO implement disconnection from a client
+    //TODO Somewhere there need to be a >> print statement(to Tim)
     server.close();
   }
 

@@ -2,8 +2,11 @@ package socs.network.node;
 
 import socs.network.message.LSA;
 import socs.network.message.LinkDescription;
+import socs.network.message.SOSPFPacket;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 public class LinkStateDatabase {
 
@@ -22,8 +25,8 @@ public class LinkStateDatabase {
    * output the shortest path from this router to the destination with the given IP address
    */
   String getShortestPath(String destinationIP) {
-    //TODO: fill the implementation here
-    return null;
+    String shortest = "";
+    return shortest;
   }
 
   //initialize the linkstate database by adding an entry about the router itself
@@ -37,6 +40,18 @@ public class LinkStateDatabase {
     ld.tosMetrics = 0;
     lsa.links.add(ld);
     return lsa;
+  }
+
+
+  public void update(Link link)
+  {
+    //make it such that you can add/remove, not only add
+    LinkDescription ld = new LinkDescription();
+    ld.linkID = link.router2.simulatedIPAddress;
+    ld.portNum = link.router2.processPortNumber;
+    ld.tosMetrics = link.weight;
+    _store.get(rd.simulatedIPAddress).lsaSeqNumber++;
+    _store.get(rd.simulatedIPAddress).links.add(ld);
   }
 
 
