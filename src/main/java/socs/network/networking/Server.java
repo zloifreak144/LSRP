@@ -17,7 +17,7 @@ public class Server
     private ConnectionHandler[] links = new ConnectionHandler[4];
     public Event<Integer, SOSPFPacket> msgReceivedEvent = new Event<>();
     public Event<Integer, String> connectionAcceptedEvent = new Event<>();
-    public Event<Integer, LinkDescription> linkCreatedEvent = new Event<>();
+    public Event<Integer, LinkDescription> linkCreatedEvent  = new Event<>();
     public Event<Integer, LinkDescription> linkRemovedEvent = new Event<>();
     public Event<Integer, SOSPFPacket> lsUpdateEvent = new Event<>();
     private ServerSocket server;
@@ -204,8 +204,8 @@ public class Server
     private void handleLSAUPDATE(ConnectionHandler connectionHandler, SOSPFPacket msg)
     {
         //TODO integer must be somehow used
-        lsUpdateEvent.invoke(0,msg);
-        msgReceivedEvent.invoke(0, msg);
+        lsUpdateEvent.invoke(connectionHandler.index,msg);
+        msgReceivedEvent.invoke(connectionHandler.index, msg);
     }
 
 

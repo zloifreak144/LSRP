@@ -11,6 +11,7 @@ import socs.network.util.Configuration;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.LinkedList;
+import java.util.UUID;
 import java.util.Vector;
 
 
@@ -18,6 +19,9 @@ public class Router {
 
   protected LinkStateDatabase lsd;
 
+  //this one only contains the lsaArray
+  SOSPFPacket lastMessageSent = new SOSPFPacket(new Vector<LSA>());
+  final String routerSignature = UUID.randomUUID().toString();
   RouterDescription rd = new RouterDescription();
   Server server;
   int numConnections;
@@ -42,7 +46,12 @@ public class Router {
       ports[portIndex] = null;
     });
 
-    server.lsUpdateEvent.addHandler((EventHandler<Integer,SOSPFPacket>) (num,msg) -> {
+    server.lsUpdateEvent.addHandler((EventHandler<Integer,SOSPFPacket>) (index,msg) -> {
+
+      //check if the message you have received is the same you sent before.
+      //System.out.println("Index is: " + index);
+      if(index == -1) return;
+      if(msg.routerID.equals(routerSignature)) return;
 
       boolean resend = updateLSD(msg);
       SOSPFPacket newMsg = new SOSPFPacket(msg);
@@ -61,6 +70,7 @@ public class Router {
               newMsg.lsaArray.add(lsa);
             }
           }
+          lastMessageSent = new SOSPFPacket(newMsg.lsaArray);
           server.send(newMsg,i);
         }
       }
@@ -96,6 +106,7 @@ public class Router {
 
       else if(packet.sospfType == 1)
       {
+        if(index == -1) return;
         System.out.println("received LSAUPDATE from " + packet.srcIP);
       }
 
@@ -188,7 +199,6 @@ public class Router {
    * @return
    */
   private boolean updateLSD(SOSPFPacket msg) {
-    System.out.println("SIKIM");
     boolean resend = false;
     for (LSA msgLSA : msg.lsaArray) {
       LSA dbLSA = null;
@@ -216,7 +226,6 @@ public class Router {
 
               if(!dbLSA.hasLink(ld1))
               {
-                System.out.println("ADD1");
                 dbLSA.links.add(ld1);
               }
 
@@ -226,12 +235,11 @@ public class Router {
          }
         }
       } else {
-        System.out.println("SHIT");
         lsd._store.put(msgLSA.linkStateID, msgLSA);
         resend = true;
       }
     }
-    System.out.println("\nupdated lsd: \n" + lsd);
+    //System.out.println("\nupdated lsd: \n" + lsd);
     return resend;
   }
 
@@ -245,7 +253,7 @@ public class Router {
     msg.srcIP = rd.simulatedIPAddress;
     msg.sospfType = 1;
     msg.lsaArray = new Vector<LSA>();
-
+    msg.routerID = routerSignature;
     for(LSA lsa : lsd._store.values()){
       msg.lsaArray.add(lsa);
     }

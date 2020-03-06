@@ -56,7 +56,6 @@ public class LinkStateDatabase {
 
     if(!lsa.hasLink(ld))
     {
-      System.out.println("ADD");
       lsa.links.add(ld);
     }
   }

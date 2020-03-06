@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class SOSPFPacket implements Serializable {
 
+
   //for inter-process communication
   public String srcProcessIP;
   public short srcProcessPort;
@@ -48,6 +49,12 @@ public class SOSPFPacket implements Serializable {
       for (LSA lsa : packet.lsaArray) {
         lsaArray.add(lsa);
       }
+    }
+  }
+
+  public SOSPFPacket(Vector<LSA> lsaArray){
+    for (LSA lsa : lsaArray) {
+      this.lsaArray.add(lsa);
     }
   }
 
