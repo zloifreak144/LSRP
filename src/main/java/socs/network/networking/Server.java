@@ -57,6 +57,8 @@ public class Server
         }).start();
     }
 
+    //private bool hasConnection(string )
+
     /**
      * Close all connections and the server
      */
@@ -160,6 +162,12 @@ public class Server
         //remove from pending add to link
         pendingConnections.remove(connectionHandler);
         connectionHandler.index = index;
+
+        if(hasLink(connectionHandler))
+        {
+            return;
+        }
+
         links[index] = connectionHandler;
 
         LinkDescription linkDescription = new LinkDescription();
@@ -171,6 +179,26 @@ public class Server
         linkCreatedEvent.invoke(index, linkDescription);
         msgReceivedEvent.invoke(index, msg);
     }
+
+    private boolean hasLink(ConnectionHandler c)
+    {
+        return hasLink(c.getIncomingIP());
+    }
+
+    private boolean hasLink(String srcIP)
+    {
+        for(ConnectionHandler link : links)
+        {
+            if(link != null && srcIP.equals(link.getIncomingIP()))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
 
     //TODO implement
     private void handleLSAUPDATE(ConnectionHandler connectionHandler, SOSPFPacket msg)
@@ -204,6 +232,11 @@ public class Server
     public void attach(String processIP, String simulatedIP ,short processPort, short weight)
     {
         Socket socket = null;
+
+        if(hasLink(processIP))
+        {
+            return;
+        }
 
         try
         {

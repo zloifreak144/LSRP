@@ -33,6 +33,7 @@ public class Router {
 
     server.linkCreatedEvent.addHandler((EventHandler<Integer, Server.LinkDescription>) (portIndex, link) ->
     {
+      System.out.println("LINK created");
       addLink(link.srcProcessIP, link.srcProcessPort, link.srcIP, portIndex, link.weight);
     });
 
@@ -187,6 +188,7 @@ public class Router {
    * @return
    */
   private boolean updateLSD(SOSPFPacket msg) {
+    System.out.println("SIKIM");
     boolean resend = false;
     for (LSA msgLSA : msg.lsaArray) {
       LSA dbLSA = null;
@@ -211,13 +213,20 @@ public class Router {
               }
             }
             if (!exists) {
-              dbLSA.links.add(ld1);
+
+              if(!dbLSA.hasLink(ld1))
+              {
+                System.out.println("ADD1");
+                dbLSA.links.add(ld1);
+              }
+
               dbLSA.lsaSeqNumber++;
               resend = true;
             }
          }
         }
       } else {
+        System.out.println("SHIT");
         lsd._store.put(msgLSA.linkStateID, msgLSA);
         resend = true;
       }
@@ -225,6 +234,8 @@ public class Router {
     System.out.println("\nupdated lsd: \n" + lsd);
     return resend;
   }
+
+
 
   //send lsupdate after start/connect/disconnect
   private void sendLSUpdate(){

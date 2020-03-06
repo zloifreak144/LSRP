@@ -50,8 +50,15 @@ public class LinkStateDatabase {
     ld.linkID = link.router2.simulatedIPAddress;
     ld.portNum = link.router2.processPortNumber;
     ld.tosMetrics = link.weight;
-    _store.get(rd.simulatedIPAddress).lsaSeqNumber++;
-    _store.get(rd.simulatedIPAddress).links.add(ld);
+    LSA lsa = _store.get(rd.simulatedIPAddress);
+
+    lsa.lsaSeqNumber++;
+
+    if(!lsa.hasLink(ld))
+    {
+      System.out.println("ADD");
+      lsa.links.add(ld);
+    }
   }
 
 
