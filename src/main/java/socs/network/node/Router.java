@@ -37,7 +37,6 @@ public class Router {
 
     server.linkCreatedEvent.addHandler((EventHandler<Integer, Server.LinkDescription>) (portIndex, link) ->
     {
-      System.out.println("LINK created");
       addLink(link.srcProcessIP, link.srcProcessPort, link.srcIP, portIndex, link.weight);
     });
 
@@ -60,7 +59,7 @@ public class Router {
       //forward the message
       for (int i = 0;i < ports.length;i++)
       {
-        if(ports[i] != null && !ports[i].router2.simulatedIPAddress.equals(msg.srcIP))
+        if(ports[i] != null && !ports[i].router2.simulatedIPAddress.equals(msg.srcIP) && ports[i].router2.getStatus() == RouterStatus.TWO_WAY)
         {
           newMsg.dstIP = ports[i].router2.simulatedIPAddress;
           if(resend) {
@@ -129,19 +128,6 @@ public class Router {
 
   }
 
-  //TODO check if we need to use it
-  private boolean LinkExists(String simIP)
-  {
-    for(Link port : ports)
-    {
-      if(port.router2.simulatedIPAddress.equals(simIP))
-      {
-        return true;
-      }
-    }
-
-    return false;
-  }
 
   /**
    * output the shortest path to the given destination ip
@@ -151,7 +137,7 @@ public class Router {
    * @param destinationIP the ip adderss of the destination simulated router
    */
   private void processDetect(String destinationIP) {
-
+    System.out.println(lsd.getShortestPath(rd.simulatedIPAddress, destinationIP));
   }
 
   /**
@@ -239,8 +225,8 @@ public class Router {
         resend = true;
       }
     }
-    System.out.println("\nupdated lsd: \n" + lsd);
-    System.out.println("Jakushka");
+   //System.out.println("\nupdated lsd: \n" + lsd);
+
     return resend;
   }
 
@@ -259,7 +245,7 @@ public class Router {
       msg.lsaArray.add(lsa);
     }
     for (int i = 0;i < ports.length;i++) {
-      if (ports[i] != null) {
+      if (ports[i] != null && ports[i].router2.getStatus() == RouterStatus.TWO_WAY) {
         msg.dstIP = ports[i].router2.simulatedIPAddress;
         server.send(msg, i);
       }
@@ -384,6 +370,14 @@ public class Router {
         }
         System.out.print(">> ");
         command = br.readLine();
+        try {
+          isReader.reset();
+           br.reset();
+        }
+        catch (Exception e)
+        {
+
+        }
       }
 
       isReader.close();

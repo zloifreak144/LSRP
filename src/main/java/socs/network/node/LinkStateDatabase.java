@@ -22,13 +22,6 @@ public class LinkStateDatabase {
     _store.put(l.linkStateID, l);
   }
 
-  /**
-   * output the shortest path from this router to the destination with the given IP address
-   */
-  String getShortestPath(String destinationIP) {
-    String shortest = "";
-    return shortest;
-  }
 
   //initialize the linkstate database by adding an entry about the router itself
   private LSA initLinkStateDatabase() {
@@ -122,6 +115,8 @@ public class LinkStateDatabase {
       {
         paths.add(temp);
       }
+
+      path.removeFrom(current.linkStateID);
     }
 
     return getSmallestPath(paths);
@@ -133,7 +128,7 @@ public class LinkStateDatabase {
     {
       return null;
     }
-    System.out.println("Size: " + paths.size());
+
     Path smallestPath = paths.get(0);
 
     for(Path path : paths)
@@ -207,12 +202,13 @@ public class LinkStateDatabase {
         if(temp.getSrcID().equals(srcID))
         {
           index = i;
+          break;
         }
       }
 
       if(index != -1)
       {
-        for(int i = index + 1; i < path.size(); i++)
+        for(int i = index; i < path.size(); i++)
         {
           path.remove(i);
         }
@@ -222,11 +218,11 @@ public class LinkStateDatabase {
 
     @Override
     public String toString() {
-      String path ="";
+      String path = this.path.isEmpty() ? "" : this.path.get(0).srcID;
 
       for(PathSegment segment : this.path)
       {
-        path += segment + " --> ";
+        path += " --> " + "(" + segment.weight + ")"  +  segment.destID;
       }
 
       return path;
@@ -247,13 +243,8 @@ public class LinkStateDatabase {
     }
 
     short getWeight() { return weight; }
-    String getDestID() { return srcID; }
-    String getSrcID() { return destID; }
-
-    @Override
-    public String toString() {
-      return "[ " + srcID + "---(" + weight + ")---" + destID + " ]";
-    }
+    String getDestID() { return destID; }
+    String getSrcID() { return srcID; }
   }
 
 }

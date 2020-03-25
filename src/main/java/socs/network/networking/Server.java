@@ -346,7 +346,7 @@ Or phrased differently: If both sides first construct the ObjectInputStream, bot
         }
         catch(Exception e)
         {
-            System.err.println("ERROR! Failed to send the message\n" + e.getMessage());
+            //System.err.println("ERROR! Failed to send the message\n" + e.getMessage());
         }
     }
 
@@ -367,7 +367,7 @@ Or phrased differently: If both sides first construct the ObjectInputStream, bot
         }
         catch (Exception e)
         {
-            System.err.println("ERROR!: Client interrupted\n" + e.getMessage() + " " + e.getClass());
+            //System.err.println("ERROR!: Client interrupted\n" + e.getMessage() + " " + e.getClass());
         }
     }
 
