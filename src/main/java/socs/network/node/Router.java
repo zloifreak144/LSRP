@@ -97,7 +97,7 @@ public class Router {
           server.send(response, index);
           ports[index].router2.setStatus(RouterStatus.TWO_WAY);
           if(packet.weight != -1) ports[index].weight = packet.weight;
-          lsd.update(ports[index]);
+          lsd.add(ports[index]);
           sendLSUpdate();
         }
 
@@ -147,6 +147,14 @@ public class Router {
    * @param portNumber the port number which the link attaches at
    */
   private void processDisconnect(short portNumber) {
+    lsd.remove(ports[portNumber]);
+    sendLSUpdate();
+    SOSPFPacket msg = new SOSPFPacket();
+    msg.sospfType = 3;
+    server.send(msg,portNumber);
+    server.links[portNumber] = null;
+    ports[portNumber] = null;
+    //System.out.println("server: " + server.links[portNumber] + "router: " + ports[portNumber]);
 
   }
 
@@ -197,35 +205,38 @@ public class Router {
 
       if (dbLSA != null) {
         if (msgLSA.lsaSeqNumber > dbLSA.lsaSeqNumber) {
+          dbLSA.links.clear();
+          dbLSA.links.addAll(msgLSA.links);
+          dbLSA.lsaSeqNumber++;
 
-          for(LinkDescription ld1 : msgLSA.links)
-          {
-            boolean exists = false;
-            for (LinkDescription ld2 : dbLSA.links)
-            {
-              if (ld1.linkID.equals(ld2.linkID)){
-                exists = true;
-                break;
-              }
-            }
-            if (!exists) {
-
-              if(!dbLSA.hasLink(ld1))
-              {
-                dbLSA.links.add(ld1);
-              }
-
-              dbLSA.lsaSeqNumber++;
-              resend = true;
-            }
-         }
+//          for(LinkDescription ld1 : msgLSA.links)
+//          {
+//            boolean exists = false;
+//            for (LinkDescription ld2 : dbLSA.links)
+//            {
+//              if (ld1.linkID.equals(ld2.linkID)){
+//                exists = true;
+//                break;
+//              }
+//            }
+//            if (!exists) {
+//
+//              if(!dbLSA.hasLink(ld1))
+//              {
+//                dbLSA.links.add(ld1);
+//              }
+//
+//              dbLSA.lsaSeqNumber++;
+//              resend = true;
+//            }
+//         }
         }
       } else {
         lsd._store.put(msgLSA.linkStateID, msgLSA);
         resend = true;
       }
     }
-   //System.out.println("\nupdated lsd: \n" + lsd);
+   System.out.println("\nupdated lsd: \n" + lsd);
 
     return resend;
   }
@@ -312,9 +323,12 @@ public class Router {
    */
   private void processQuit()
   {
-    //TODO implement disconnection from a client
-    //TODO Somewhere there need to be a >> print statement(to Tim)
-    server.close();
+    for(int i = 0;i < ports.length; i++){
+      if(ports[i] != null){
+        processDisconnect((short)i);
+      }
+    }
+    //server.close();
   }
 
   /**

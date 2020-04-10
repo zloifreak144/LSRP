@@ -14,7 +14,7 @@ public class Server
     private int portNum;
     private String ip;
     private ArrayList<ConnectionHandler> pendingConnections = new ArrayList<>();
-    private ConnectionHandler[] links = new ConnectionHandler[4];
+    public ConnectionHandler[] links = new ConnectionHandler[4];
     public Event<Integer, SOSPFPacket> msgReceivedEvent = new Event<>();
     public Event<Integer, String> connectionAcceptedEvent = new Event<>();
     public Event<Integer, LinkDescription> linkCreatedEvent  = new Event<>();
@@ -126,6 +126,10 @@ public class Server
             {
                 handleConnectionRefused(connectionHandler, msg);
             }
+            else if(msg.sospfType == 3)
+            {
+                linkRemovedEvent.invoke(connectionHandler.index, new LinkDescription());
+            }
             else
             {
                 msgReceivedEvent.invoke(index1, msg);
@@ -198,9 +202,6 @@ public class Server
         return false;
     }
 
-
-
-    //TODO implement
     private void handleLSAUPDATE(ConnectionHandler connectionHandler, SOSPFPacket msg)
     {
         //TODO integer must be somehow used
@@ -228,6 +229,8 @@ public class Server
 
         msgReceivedEvent.invoke(linkIndex, msg);
     }
+
+
 
     public void attach(String processIP, String simulatedIP ,short processPort, short weight)
     {

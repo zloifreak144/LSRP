@@ -37,7 +37,7 @@ public class LinkStateDatabase {
   }
 
 
-  public void update(Link link)
+  public void add(Link link)
   {
     //make it such that you can add/remove, not only add
     LinkDescription ld = new LinkDescription();
@@ -50,9 +50,36 @@ public class LinkStateDatabase {
 
     if(!lsa.hasLink(ld))
     {
-      System.out.println("ADD");
+      //System.out.println("ADD");
       lsa.links.add(ld);
     }
+  }
+
+  //remove links for both lsas and send the update
+  public void remove(Link link)
+  {
+    LSA lsa = _store.get(rd.simulatedIPAddress);
+    int index = 0;
+    for (LinkDescription ld : lsa.links){
+      if (ld.linkID.equals(link.router2.simulatedIPAddress)){
+        break;
+      }
+      index++;
+    }
+    lsa.links.remove(index);
+    lsa.lsaSeqNumber++;
+
+    index = 0;
+    lsa = _store.get(link.router2.simulatedIPAddress);
+    for (LinkDescription ld : lsa.links){
+      if (ld.linkID.equals(link.router1.simulatedIPAddress)){
+        break;
+      }
+      index++;
+    }
+    lsa.links.remove(index);
+    lsa.lsaSeqNumber++;
+
   }
 
 
